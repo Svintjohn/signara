@@ -27,12 +27,13 @@ flutter create --platforms=android --org com.signara .   # generates android/ ru
 flutter pub get
 ```
 
-1. In `android/app/build.gradle`, set `minSdk = 24` (or higher).
-2. Add the camera permission to `android/app/src/main/AndroidManifest.xml`:
-   `<uses-permission android:name="android.permission.CAMERA" />`
-3. Download MediaPipe's `hand_landmarker.task` model and put it in
-   `android/app/src/main/assets/` (create the folder). Commit it (it is small), so CI builds
-   include it. Check the model's license first.
+1. Run `.\tools\setup_android.ps1` (PowerShell, from the repo root). It sets `minSdk = 24`
+   and downloads MediaPipe's `hand_landmarker.task` into `android/app/src/main/assets/`.
+   Check the result with `git diff`. Do it by hand if the script fails.
+2. The camera permission comes from the plugin's manifest and is merged automatically.
+   If the camera is denied at runtime, add
+   `<uses-permission android:name="android.permission.CAMERA" />` to the app manifest.
+3. Commit the model (it is small) so CI builds include it. Check its license first.
 4. The logo is `assets/branding/signara_logo.png` (600x600, used as provided, unmodified).
    For the launcher icon, use `flutter_launcher_icons` pointed at that file.
 5. `flutter test` then `flutter run` on a real device (the camera does not work well on emulators).
