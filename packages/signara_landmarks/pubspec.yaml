@@ -1,0 +1,19 @@
+name: signara_landmarks
+description: Native Android camera + MediaPipe hand landmarks for Signara. Only landmarks cross to Dart, never frames.
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.signara.landmarks
+        pluginClass: SignaraLandmarksPlugin

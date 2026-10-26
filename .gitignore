@@ -1,0 +1,15 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+local.properties
+*.jks
+*.keystore
+
+# Training artifacts (keep scripts, not raw data or run outputs).
+# Models the app ships with (*.task, *.tflite) ARE committed so CI builds work.
+training/data/
+training/runs/
