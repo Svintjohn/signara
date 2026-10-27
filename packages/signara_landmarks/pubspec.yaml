@@ -1,6 +1,6 @@
 name: signara_landmarks
-description: Native Android camera + MediaPipe hand landmarks for Signara. Only landmarks cross to Dart, never frames.
-version: 0.0.1
+description: Camera + MediaPipe hand landmarks for Signara (Android native, web via JS). Only landmarks cross to Dart, never frames.
+version: 0.0.2
 publish_to: "none"
 
 environment:
@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  web: ^1.0.0
 
 flutter:
   plugin:

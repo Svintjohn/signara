@@ -1,149 +1,124 @@
 import 'package:flutter/material.dart';
 
-import '../../core/progress_controller.dart';
-import '../../data/vocab.dart';
+import '../../core/app_services.dart';
+import '../../learning/lesson_items.dart';
+import 'lesson_screen.dart';
 
-class LearnScreen extends StatelessWidget {
-  const LearnScreen({super.key, required this.progress});
+/// Situational lessons + today's spaced-repetition practice.
+class LearnScreen extends StatefulWidget {
+  const LearnScreen({super.key, required this.services});
 
-  final ProgressController progress;
-
-  static String _title(String category) =>
-      category[0].toUpperCase() + category.substring(1);
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Vocab>(
-      future: Vocab.load(),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return Center(child: Text('Could not load vocab: ${snap.error}'));
-        }
-        if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final vocab = snap.data!;
-        final categories = vocab.byCategory;
-
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            AnimatedBuilder(
-              animation: progress,
-              builder: (context, _) {
-                final s = progress.state;
-                return Text(
-                  '🔥 ${s?.streak ?? 0}-day streak   ·   ⭐ ${s?.xp ?? 0} XP',
-                  style: Theme.of(context).textTheme.titleMedium,
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.abc),
-                title: const Text('Fingerspelling'),
-                subtitle: Text(
-                  '${vocab.alphabet.length} letters · '
-                  '${vocab.numbers.length} numbers',
-                ),
-                onTap: () => _openPractice(
-                  context,
-                  title: 'Fingerspelling',
-                  items: [...vocab.alphabet, ...vocab.numbers],
-                ),
-              ),
-            ),
-            for (final entry in categories.entries)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.sign_language),
-                  title: Text(_title(entry.key)),
-                  subtitle: Text('${entry.value.length} signs'),
-                  onTap: () => _openPractice(
-                    context,
-                    title: _title(entry.key),
-                    items: entry.value.map((e) => e.gloss).toList(),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _openPractice(
-    BuildContext context, {
-    required String title,
-    required List<String> items,
-  }) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _PracticeStub(
-          title: title,
-          items: items,
-          progress: progress,
-        ),
-      ),
-    );
-  }
-}
-
-/// Placeholder for the real lesson: later this shows a reference clip, opens
-/// the camera, and compares the learner's landmarks to the target sign.
-class _PracticeStub extends StatefulWidget {
-  const _PracticeStub({
-    required this.title,
-    required this.items,
-    required this.progress,
-  });
-
-  final String title;
-  final List<String> items;
-  final ProgressController progress;
+  final AppServices services;
 
   @override
-  State<_PracticeStub> createState() => _PracticeStubState();
+  State<LearnScreen> createState() => _LearnScreenState();
 }
 
-class _PracticeStubState extends State<_PracticeStub> {
-  int _i = 0;
+class _LearnScreenState extends State<LearnScreen> {
+  int _due = 0;
 
-  Future<void> _done() async {
-    await widget.progress.recordPractice(xp: 10);
+  static const Map<String, String> _titles = {
+    'basics': 'Basics · Pangunahin',
+    'emergency': 'Emergency · Sa emergency',
+    'hospital': 'At the hospital · Sa ospital',
+    'school': 'At school · Sa eskwela',
+    'questions': 'Question words · Mga tanong',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final n = await widget.services.srs.dueCount();
     if (!mounted) return;
-    setState(() => _i = (_i + 1) % widget.items.length);
+    setState(() => _due = n);
+  }
+
+  Future<void> _open(String title, List<String> ids) async {
+    if (ids.isEmpty) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LessonScreen(
+          title: title,
+          ids: ids,
+          services: widget.services,
+        ),
+      ),
+    );
+    await _refresh();
+  }
+
+  Future<void> _today() async {
+    final ids = await widget.services.srs.todaysSession(
+      LessonItem.allIds(widget.services.vocab),
+    );
+    if (!mounted) return;
+    await _open("Today's practice", ids);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.items[_i],
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.displayMedium,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Reference clip + camera feedback coming in weeks 5-6.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            FilledButton(
-              onPressed: _done,
-              child: const Text('Mark as practiced  (+10 XP)'),
-            ),
-          ],
+    final vocab = widget.services.vocab;
+    final categories = vocab.byCategory;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        AnimatedBuilder(
+          animation: widget.services.progress,
+          builder: (context, _) {
+            final s = widget.services.progress.state;
+            return Text(
+              '🔥 ${s?.streak ?? 0}-day streak   ·   ⭐ ${s?.xp ?? 0} XP',
+              style: Theme.of(context).textTheme.titleMedium,
+            );
+          },
         ),
-      ),
+        const SizedBox(height: 12),
+        Card(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          child: ListTile(
+            leading: const Icon(Icons.local_fire_department),
+            title: const Text("Today's practice"),
+            subtitle: Text(
+              _due == 0
+                  ? 'Nothing due. New cards are waiting.'
+                  : '$_due card${_due == 1 ? '' : 's'} due for review',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _today,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.abc),
+            title: const Text('Fingerspelling · Alpabeto'),
+            subtitle: Text(
+              '${vocab.alphabet.length} letters · ${vocab.numbers.length} numbers',
+            ),
+            onTap: () => _open(
+              'Fingerspelling',
+              LessonItem.fingerspellingIds(vocab),
+            ),
+          ),
+        ),
+        for (final entry in categories.entries)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.sign_language),
+              title: Text(_titles[entry.key] ?? entry.key),
+              subtitle: Text('${entry.value.length} signs'),
+              onTap: () => _open(
+                _titles[entry.key] ?? entry.key,
+                LessonItem.idsForCategory(vocab, entry.key),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

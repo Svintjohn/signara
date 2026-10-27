@@ -68,6 +68,8 @@ class StreakService {
     return '$y-$m-$day';
   }
 
+  static DateTime parseDay(String key) => _parse(key);
+
   static DateTime _parse(String key) {
     final p = key.split('-').map(int.parse).toList();
     // UTC on purpose: avoids DST making a "day" 23 or 25 hours long.

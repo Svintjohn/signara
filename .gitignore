@@ -13,3 +13,7 @@ local.properties
 # Models the app ships with (*.task, *.tflite) ARE committed so CI builds work.
 training/data/
 training/runs/
+
+# Python
+__pycache__/
+*.pyc

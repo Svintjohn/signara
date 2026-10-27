@@ -37,6 +37,37 @@ foreach ($f in $candidates) {
   }
 }
 
+# --- 1b. microphone permission (speech input in Voice -> Sign) -----------------
+$manifest = Join-Path $root 'android\app\src\main\AndroidManifest.xml'
+if (Test-Path $manifest) {
+  $m = [System.IO.File]::ReadAllText($manifest)
+  $changed = $false
+
+  if ($m -notmatch 'android\.permission\.RECORD_AUDIO') {
+    $m = $m -replace '(<manifest[^>]*>)', ('$1' + "`n    <uses-permission android:name=`"android.permission.RECORD_AUDIO`"/>")
+    $changed = $true
+  }
+
+  if ($m -notmatch 'android\.speech\.RecognitionService') {
+    $intent = "`n        <intent><action android:name=`"android.speech.RecognitionService`"/></intent>"
+    if ($m -match '<queries>') {
+      $m = $m -replace '<queries>', ('<queries>' + $intent)
+    } else {
+      $m = $m -replace '</manifest>', ("    <queries>" + $intent + "`n    </queries>`n</manifest>")
+    }
+    $changed = $true
+  }
+
+  if ($changed) {
+    [System.IO.File]::WriteAllText($manifest, $m)
+    Write-Host 'Added microphone permission and speech service query to AndroidManifest.xml'
+  } else {
+    Write-Host 'AndroidManifest.xml already has the microphone entries.'
+  }
+} else {
+  Write-Host "AndroidManifest.xml not found at $manifest. Add RECORD_AUDIO by hand."
+}
+
 # --- 2. hand landmarker model ----------------------------------------------
 $assets = Join-Path $root 'android\app\src\main\assets'
 New-Item -ItemType Directory -Force -Path $assets | Out-Null

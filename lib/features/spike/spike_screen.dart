@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:signara_landmarks/signara_landmarks.dart';
+
+import '../../core/camera_permission.dart';
 
 /// Week-1 spike: prove camera -> MediaPipe hand landmarks -> Flutter UI runs
 /// fast enough on a cheap Android phone. Pass target: >= 15 fps.
@@ -34,8 +35,7 @@ class _SpikeScreenState extends State<SpikeScreen> {
   }
 
   Future<void> _start() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted) {
+    if (!await ensureCameraPermission()) {
       setState(() => _error = 'Camera permission is required.');
       return;
     }
@@ -117,11 +117,11 @@ class _SpikeScreenState extends State<SpikeScreen> {
                         child: AspectRatio(
                           // Portrait preview. Adjust if the plugin reports
                           // a different size.
-                          aspectRatio: 3 / 4,
+                          aspectRatio: _last?.aspect ?? 3 / 4,
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Texture(textureId: _textureId!),
+                              SignaraLandmarks.buildPreview(_textureId!),
                               CustomPaint(
                                 painter: _HandsPainter(
                                   _last?.hands ?? const [],

@@ -49,7 +49,7 @@ class FingerspellingController extends ChangeNotifier {
 
     final features = normalizeHand(
       frame.hands.first.xyz,
-      aspect: aspect,
+      aspect: frame.aspect ?? aspect,
       flipX: flipX,
     );
     live = classifier.classify(features);
